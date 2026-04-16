@@ -1,0 +1,25 @@
+{
+  "short_name": "HoopsTimer",
+  "name": "Hoops Timer Pro",
+  "description": "Professional basketball rotation and quota management tool for STEM research.",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#121212",
+  "background_color": "#121212",
+  "scope": "/",
+  "lang": "en-US"
+}
