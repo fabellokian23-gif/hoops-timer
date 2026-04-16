@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
+    <title>Hoops Timer Pro</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121212">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon.png">
+
+    <style>
+        :root {
+            --bg: #121212; --card: #1e1e1e; --accent: #00d4ff; --stop: #e74c3c;
+            --go: #2ecc71; --low: #2ecc71; --med: #f1c40f; --high: #e67e22; --over: #ff0000;
+            --glow-white: rgba(255, 255, 255, 0.9);
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; padding: 10px; margin: 0; user-select: none; }
+        
+        .header { background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid #333; position: sticky; top: 0; z-index: 100; }
+        .clock-container { display: flex; justify-content: center; align-items: center; position: relative; }
+        #gameClock { font-size: 3rem; font-family: monospace; color: var(--accent); }
+        
+        .save-btn-icon { 
+            position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+            font-size: 1.3rem; background: #333; padding: 10px; border-radius: 50%; 
+            cursor: pointer; border: 1px solid #444; line-height: 1;
+        }
+
+        .controls { display: flex; gap: 10px; margin-top: 10px; }
+        button { flex: 1; padding: 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; color: white; }
+        .start { background: var(--go); }
+        .stop { background: var(--stop); }
+        .reset-btn { background: #333; color: #aaa; flex: 0.3; }
+
+        .box { background: var(--card); padding: 12px; border-radius: 12px; margin-top: 15px; border: 1px solid #333; }
+        h2 { font-size: 0.7rem; color: #666; margin: 0 0 10px 0; text-transform: uppercase; }
+
+        .pta-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .labels-group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        
+        .set-label, .quota-label, .quota-timer, .clear-btn { 
+            font-size: 0.7rem; padding: 4px 8px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; 
+        }
+        .set-label { color: var(--accent); background: #263238; }
+        .quota-label { background: #4a148c; }
+        .quota-timer { color: #f1c40f; background: #332b00; border: 1px solid #f1c40f; font-family: monospace; }
+        .clear-btn { background: #c0392b; }
+
+        .strip { 
+            background: #2a2a2a; padding: 18px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;
+            border: 2px solid transparent; border-left: 8px solid #444; height: 65px; box-sizing: border-box; transition: all 0.2s; position: relative;
+            margin-bottom: 8px;
+        }
+        .pta-strip { background: #2d280a; }
+
+        .q-low { border-left-color: var(--low) !important; }
+        .q-med { border-left-color: var(--med) !important; }
+        .q-high { border-left-color: var(--high) !important; }
+        .q-over { border-left-color: var(--over) !important; }
+
+        .live-active-in { border: 2px solid white !important; box-shadow: 0 0 15px var(--glow-white); z-index: 5; }
+        .live-active-out { border: 2px solid #666 !important; opacity: 0.6; }
+        .sub-badge { font-size: 0.55rem; background: white; color: black; padding: 2px 4px; border-radius: 3px; margin-left: 6px; font-weight: bold; vertical-align: middle; }
+
+        .pra-container { display: flex; gap: 10px; }
+        .pra-sub-box { flex: 1; background: #1a1a1a; padding: 12px; border-radius: 8px; border: 1px solid #333; min-height: 45px;}
+        .pra-zone { display: flex; flex-wrap: wrap; gap: 6px; }
+        .pra-player-box { width: 32px; height: 32px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: bold; color: #000; }
+        .bg-low { background: var(--low); } .bg-med { background: var(--med); } .bg-high { background: var(--over); color: white; }
+
+        .slot-placeholder { height: 65px; border: 1px dashed #333; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #444; font-size: 0.8rem; margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="clock-container">
+            <span id="gameClock">00:00</span>
+            <div class="save-btn-icon" title="Save Report" onclick="saveLongReport()">💾</div>
+        </div>
+        <div class="controls">
+            <button id="masterBtn" class="start" onclick="toggleGame()">START</button>
+            <button class="reset-btn" onclick="resetAll()">RESET</button>
+        </div>
+    </div>
+
+    <div class="box">
+        <div class="pta-header">
+            <div class="labels-group">
+                <div class="set-label" id="setLabel" onclick="editLabel(this)">SET 1</div>
+                <div class="quota-label" onclick="setQuota()" id="quotaLabel">QUOTA: 10:00</div>
+                <div class="quota-timer" id="quotaTimerLabel">10:00</div>
+                <div class="clear-btn" onclick="clearPTA()">CLEAR</div>
+            </div>
+            <h2>PTA (ON-COURT)</h2>
+        </div>
+        <div id="pta-list"></div>
+    </div>
+
+    <div class="box">
+        <h2>BENCH</h2>
+        <div id="bench-list"></div>
+    </div>
+
+    <div class="box">
+        <h2>PRA (ROTATION GUIDE)</h2>
+        <div class="pra-container">
+            <div class="pra-sub-box"><div id="pra-bench" class="pra-zone"></div></div>
+            <div class="pra-sub-box"><div id="pra-pta" class="pra-zone"></div></div>
+        </div>
+    </div>
+
+<script>
+    let isRunning = false, masterTime = 0, quotaSeconds = 600, quotaCountdown = 600;
+    let players = [];
+    for (let i = 0; i < 15; i++) {
+        players.push({ id: i, label: (i+1).toString(), time: 0, onCourt: false, tally: 0, lastSubAction: null });
+    }
+
+    function toggleGame() {
+        isRunning = !isRunning;
+        document.getElementById('masterBtn').innerText = isRunning ? "STOP" : "START";
+        document.getElementById('masterBtn').className = isRunning ? "stop" : "start";
+        if (!isRunning) players.forEach(p => p.lastSubAction = null);
+        render();
+    }
+
+    function swap(id) {
+        const p = players.find(x => x.id === id);
+        if (!p.onCourt) {
+            if (players.filter(x => x.onCourt).length >= 5) return alert("5 Players Max!");
+            p.onCourt = true;
+            p.tally++; // Increase tally immediately
+            if (isRunning) p.lastSubAction = 'in';
+        } else {
+            p.onCourt = false;
+            if (isRunning) {
+                p.lastSubAction = 'out';
+                const targetId = p.id;
+                setTimeout(() => {
+                    const found = players.find(x => x.id === targetId);
+                    if (found && found.lastSubAction === 'out') { found.lastSubAction = null; render(); }
+                }, 5000);
+            }
+        }
+        render();
+    }
+
+    function saveLongReport() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 500;
+        canvas.height = 1350;
+
+        ctx.fillStyle = "#121212"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#1e1e1e"; ctx.fillRect(0, 0, 500, 120);
+        ctx.fillStyle = "#00d4ff"; ctx.font = "bold 32px Arial"; ctx.textAlign = "center";
+        ctx.fillText("FINAL GAME REPORT", 250, 50);
+        ctx.fillStyle = "#888"; ctx.font = "20px Courier New";
+        ctx.fillText("TOTAL TIME: " + format(masterTime), 250, 90);
+
+        let y = 140;
+        players.sort((a,b) => a.id - b.id).forEach((p) => {
+            let stat = getStatus(p.time);
+            let color = stat === 'over' ? '#ff0000' : stat === 'high' ? '#e67e22' : stat === 'med' ? '#f1c40f' : '#2ecc71';
+            ctx.fillStyle = "#2a2a2a"; ctx.fillRect(20, y, 460, 70);
+            ctx.fillStyle = color; ctx.fillRect(20, y, 8, 70);
+            ctx.fillStyle = "white"; ctx.textAlign = "left"; ctx.font = "bold 24px Arial";
+            ctx.fillText("#" + p.label, 45, y + 30);
+            ctx.font = "14px Arial"; ctx.fillStyle = "#00d4ff"; ctx.fillText("IN: " + p.tally, 45, y + 55);
+            ctx.textAlign = "right"; ctx.fillStyle = color; ctx.font = "bold 28px Courier New";
+            ctx.fillText(format(p.time), 460, y + 45);
+            y += 80;
+        });
+
+        const link = document.createElement('a');
+        link.download = "Report_" + format(masterTime).replace(':','-') + ".png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+    }
+
+    function setQuota() {
+        const mins = prompt("Quota Mins:", quotaSeconds/60);
+        if(mins) { quotaSeconds = parseInt(mins) * 60; quotaCountdown = quotaSeconds; render(); }
+    }
+
+    function clearPTA() {
+        if(!confirm("Next Set?")) return;
+        players.forEach(p => { p.onCourt = false; p.lastSubAction = null; });
+        let s = document.getElementById('setLabel');
+        let match = s.innerText.match(/\d+/);
+        if (match) s.innerText = "SET " + (parseInt(match[0]) + 1);
+        quotaCountdown = quotaSeconds;
+        render();
+    }
+
+    function resetAll() {
+        if(!confirm("Reset?")) return;
+        masterTime = 0; quotaCountdown = quotaSeconds;
+        players.forEach(p => { p.time = 0; p.tally = 0; p.onCourt = false; p.lastSubAction = null; });
+        document.getElementById('setLabel').innerText = "SET 1";
+        if(isRunning) toggleGame();
+        render();
+    }
+
+    function getStatus(t) {
+        let p = (t / quotaSeconds) * 100;
+        return p >= 100 ? 'over' : p >= 67 ? 'high' : p >= 34 ? 'med' : 'low';
+    }
+
+    function format(s) {
+        let m = Math.floor(Math.abs(s)/60).toString().padStart(2,'0');
+        let sec = (Math.abs(s)%60).toString().padStart(2,'0');
+        return (s < 0 ? "-" : "") + m + ":" + sec;
+    }
+
+    function render() {
+        const pta = document.getElementById('pta-list'), bench = document.getElementById('bench-list');
+        const praB = document.getElementById('pra-bench'), praP = document.getElementById('pra-pta');
+        pta.innerHTML = ''; bench.innerHTML = ''; praB.innerHTML = ''; praP.innerHTML = '';
+        document.getElementById('quotaTimerLabel').innerText = format(quotaCountdown);
+        document.getElementById('gameClock').innerText = format(masterTime);
+
+        players.forEach(p => {
+            let stat = getStatus(p.time);
+            let activeClass = (p.onCourt && p.lastSubAction === 'in') ? 'live-active-in' : 
+                             (!p.onCourt && p.lastSubAction === 'out') ? 'live-active-out' : '';
+            let subBadge = (p.onCourt && p.lastSubAction === 'in') ? `<span class="sub-badge">SUB</span>` : '';
+            
+            let strip = `<div class="strip ${p.onCourt?'pta-strip':''} q-${stat} ${activeClass}" onclick="swap(${p.id})">
+                <span>#${p.label} <small style="color:var(--accent); margin-left:8px;">IN: ${p.tally}</small> ${subBadge}</span>
+                <span style="font-family:monospace; font-weight:bold; font-size:1.1rem;">${format(p.time)}</span>
+            </div>`;
+
+            if(p.onCourt) {
+                pta.innerHTML += strip;
+                if(stat !== 'low') praP.innerHTML += `<div class="pra-player-box bg-${stat==='high'?'high':stat}">${p.label}</div>`;
+            } else {
+                bench.innerHTML += strip;
+                if(stat === 'low' || stat === 'med') praB.innerHTML += `<div class="pra-player-box bg-${stat}">${p.label}</div>`;
+            }
+        });
+
+        let active = players.filter(p => p.onCourt).length;
+        for(let i = active; i < 5; i++) pta.innerHTML += `<div class="slot-placeholder">EMPTY SLOT</div>`;
+    }
+
+    function editLabel(el) {
+        const val = prompt("Edit Label:", el.innerText);
+        if (val) el.innerText = val.toUpperCase();
+    }
+
+    setInterval(() => {
+        if(isRunning) { 
+            masterTime++; quotaCountdown--; 
+            players.forEach(p => { if(p.onCourt) p.time++; }); 
+            render(); 
+        }
+    }, 1000);
+
+    render();
+</script>
+</body>
+</html>
